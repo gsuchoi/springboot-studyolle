@@ -10,6 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Transactional
 @SpringBootTest
 @AutoConfigureMockMvc
 class AccountControllerTest {
@@ -31,6 +33,38 @@ class AccountControllerTest {
 
     @MockBean
     JavaMailSender javaMailSender;
+
+    @DisplayName("인증 메일 확인 - 입력값 오류")
+    @Test
+    void checkEmailToken_with_wrong_input() throws Exception {
+        mockMvc.perform(get("/check-email-token")
+                .param("token", "sdfjslwfwef")
+                .param("email", "email@email.com"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("error"))
+                .andExpect(view().name("account/checked-email"));
+
+    }
+    @DisplayName("인증 메일 확인 - 입력값 정상")
+    @Test
+    void checkEmailToken() throws Exception {
+        Account account = Account.builder()  //입력값이 올바른것은 확인하려면 account를 저장한 실제 데이터가 있어야하므로 account저장.
+                .email("test@email.com")
+                .password("12345678")
+                .nickname("gsu925")
+                .build();
+        Account newAccount = accountRepository.save(account);
+        newAccount.generateEmailCheckToken(); //저장된 account에 이메일 토큰 생성.
+
+        mockMvc.perform(get("/check-email-token")
+                .param("token", newAccount.getEmailCheckToken()) //저장된 account와 비교.
+                .param("email", newAccount.getEmail()))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeDoesNotExist("error"))     // 에러는 없고, 닉네임과 몇번째회원인지는 있어야한다.
+                .andExpect(model().attributeExists("nickname"))
+                .andExpect(model().attributeExists("numberOfUser"))
+                .andExpect(view().name("account/checked-email"));
+    }
 
     @DisplayName("회원 가입 화면 보이는지 테스트")
     @Test

@@ -58,4 +58,10 @@ public class Account {
     public void generateEmailCheckToken() {
         this.emailCheckToken = UUID.randomUUID().toString();  // random한 uuid를 생성.
     }
+
+    /*메일 유무 확인, 가입 날짜*/
+    public void completeSignUp() {
+        this.emailVerified = true;
+        this.joinedAt = LocalDateTime.now();
+    }
 }
