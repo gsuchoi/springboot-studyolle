@@ -27,7 +27,7 @@ public class Account {
 
     private String emailCheckToken; // 이메일 검증을 위한 토큰값.
 
-    private LocalDateTime joinDt; // 인증된 회원의 가입날짜.
+    private LocalDateTime joinedAt; // 인증된 회원의 가입날짜.
 
     //기본 프로필
 
