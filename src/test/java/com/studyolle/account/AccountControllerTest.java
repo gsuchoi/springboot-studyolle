@@ -12,11 +12,15 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
+import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -42,7 +46,8 @@ class AccountControllerTest {
                 .param("email", "email@email.com"))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("error"))
-                .andExpect(view().name("account/checked-email"));
+                .andExpect(view().name("account/checked-email"))
+                .andExpect(unauthenticated());  /*인증메일을 확인해서 오류가 있는? - 인증이 된 사용자인지 확인*/
 
     }
     @DisplayName("인증 메일 확인 - 입력값 정상")
@@ -63,7 +68,8 @@ class AccountControllerTest {
                 .andExpect(model().attributeDoesNotExist("error"))     // 에러는 없고, 닉네임과 몇번째회원인지는 있어야한다.
                 .andExpect(model().attributeExists("nickname"))
                 .andExpect(model().attributeExists("numberOfUser"))
-                .andExpect(view().name("account/checked-email"));
+                .andExpect(view().name("account/checked-email"))
+                .andExpect(authenticated().withUsername("gsu925"));   /*인증이 되었을 때 인증이 되었다 표시.*/
     }
 
     @DisplayName("회원 가입 화면 보이는지 테스트")
@@ -73,38 +79,39 @@ class AccountControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())  // 보이는지 응답값 확인.
                 .andExpect(view().name("account/sign-up")) // view가 sign-up인지 화인.
-                .andExpect(model().attributeExists("signUpForm")); // 해당 attribute가 있는지 확인.
+                .andExpect(model().attributeExists("signUpForm"))   // 해당 attribute가 있는지 확인.
+                .andExpect(unauthenticated());
     }
 
     @DisplayName("회원 가입 처리 - 입력값 오류")
     @Test
     void signUpSubmit_with_wrong_input() throws Exception {
         mockMvc.perform(post("/sign-up")
-                .param("nickname", "jsoo")
+                .param("nickname", "gsu925")
                 .param("email", "email..")
                 .param("password", "12345")
                 .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(view().name("account/sign-up"));
+                .andExpect(view().name("account/sign-up"))
+                .andExpect(unauthenticated());
     }
 
     @DisplayName("회원 가입 처리 - 입력값 정상")
     @Test
     void signUpSubmit_with_correct_input() throws Exception {
         mockMvc.perform(post("/sign-up")
-                .param("nickname", "jsoo")
-                .param("email", "jsoo@gmail.com")
+                .param("nickname", "gsu925")
+                .param("email", "gsu925@email.com")
                 .param("password", "12345678")
                 .with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/"));
+                .andExpect(view().name("redirect:/"))
+                .andExpect(authenticated().withUsername("gsu925"));
 
-        Account account = accountRepository.findByEmail("jsoo@gmail.com");
-        assertNotNull(account); /*null인지 아닌지 확인.*/
-        assertNotEquals(account.getPassword(), "12345678");   /*패스워드가 인코딩됐는지 확인*/
-        assertTrue(accountRepository.existsByEmail("jsoo@gmail.com"));
+        Account account = accountRepository.findByEmail("gsu925@email.com");
+        assertNotNull(account);
+        assertNotEquals(account.getPassword(), "12345678");
         assertNotNull(account.getEmailCheckToken());
-        then(javaMailSender).should().send(any(SimpleMailMessage.class)); // SimpleMailMessage의 아무런 타입의 인스턴스가 호출이 되는지 확인.
+        then(javaMailSender).should().send(any(SimpleMailMessage.class));
     }
-
 }

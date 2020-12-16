@@ -39,7 +39,9 @@ public class AccountController {
             return "account/sign-up";
         }
 
-        accountService.processNewAccount(signUpForm);
+        Account account = accountService.processNewAccount(signUpForm);
+        // TODO 1.서비스에서 로그인 2. 여기서 로그인
+        accountService.login(account);
         return "redirect:/";
     }
 
@@ -51,14 +53,14 @@ public class AccountController {
             model.addAttribute("error", "wrong.email");
             return view;
         }
-
         //account에 있는 토큰이랑 내가 받아온 토큰이랑 같은지 비교.
-        if (!account.getEmailCheckToken().equals(token)) {
+        if (!account.isValidToken(token)){
             model.addAttribute("error", "wrong.token");
             return view;
         }
-
+        /*이메일이 토큰과 일치하는지*/
         account.completeSignUp();
+        accountService.login(account);
         model.addAttribute("numberOfUser", accountRepository.count());
         model.addAttribute("nickname", account.getNickname());
         return view;
