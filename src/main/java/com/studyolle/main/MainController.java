@@ -13,9 +13,10 @@ public class MainController {
     @GetMapping("/")
     public String home(@CurrentUser Account account, Model model) {
         //2. 핸들러 안에서 null 체크, 만약 인증한 사용자라면 model에 account 넣어주기(account가null)
-        if  (account != null) {
+        if (account != null) {
             model.addAttribute(account);
         }
+
         return "index";
     }
 
