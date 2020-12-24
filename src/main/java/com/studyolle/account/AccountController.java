@@ -40,7 +40,7 @@ public class AccountController {
         }
 
         Account account = accountService.processNewAccount(signUpForm);
-        // TODO 1.서비스에서 로그인 2. 여기서 로그인
+        // TODO 1.서비스에서 로그인 2. 여기서 로그인 둘중 선택.
         accountService.login(account);
         return "redirect:/";
     }
@@ -64,6 +64,24 @@ public class AccountController {
         model.addAttribute("numberOfUser", accountRepository.count());
         model.addAttribute("nickname", account.getNickname());
         return view;
+    }
+
+    @GetMapping("/check-email")
+    public String checkEmail(@CurrentUser Account account, Model model) {
+        model.addAttribute("email", account.getEmail());
+        return "account/check-email";
+    }
+
+    @GetMapping("/resend-confirm-email")
+    public String resendConfirmEmail(@CurrentUser Account account, Model model) {
+        if (!account.canSendConfirmEmail()) {
+            model.addAttribute("error", "인증 이메일은 1시간에 한번만 전송할 수있습니다.");
+            model.addAttribute("email", account.getEmail());
+            return "account/check-email";
+        }
+
+        accountService.sendSignUpConfirmEmail(account);
+        return "redirect:/"; //resend-confirm-email url로 이동할때마다 메일이 보내지는것을 방지.
     }
 
 }
